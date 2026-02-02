@@ -1,19 +1,20 @@
-function [R, rnk, E_list] = my_rref(A)
+function [R, rnk, E_list, E_total] = my_rref(A)
     [m, n] = size(A);
     R = A;
     E_list = {};
+    E_total = eye(m);
     cnt = 1;
-    disp('Original Matrix:');
-    disp(A);
+
     pr = 1;
     pcols = [];
-    
     for c = 1:n
         if pr > m
             break;
         end
+
         [~, mi] = max(abs(R(pr:m, c)));
         mi = mi + pr - 1;
+
         if abs(R(mi, c)) < 1e-10
             continue;
         end
@@ -21,71 +22,69 @@ function [R, rnk, E_list] = my_rref(A)
             E = eye(m);
             E([pr, mi], :) = E([mi, pr], :);
             E_list{cnt} = E;
+            E_total = E * E_total;
             R = E * R;
-            fprintf('Step %d: swap R%d and R%d\n', cnt, pr, mi);
-            disp(E);
-            disp(R);
             cnt = cnt + 1;
         end
         if abs(R(pr, c) - 1) > 1e-10
             sf = R(pr, c);
             E = eye(m);
-            E(pr, pr) = 1/sf;
+            E(pr, pr) = 1 / sf;
             E_list{cnt} = E;
+            E_total = E * E_total;
             R = E * R;
-            fprintf('Step %d: scale R%d\n', cnt, pr);
-            disp(E);
-            disp(R);
             cnt = cnt + 1;
-        end        
+        end
         for r = pr+1:m
             if abs(R(r, c)) > 1e-10
                 f = R(r, c);
                 E = eye(m);
                 E(r, pr) = -f;
                 E_list{cnt} = E;
+                E_total = E * E_total;
                 R = E * R;
-                fprintf('Step %d: eliminate R%d\n', cnt, r);
-                disp(E);
-                disp(R);
                 cnt = cnt + 1;
             end
-        end        
+        end
+
         pcols = [pcols, c];
         pr = pr + 1;
-    end    
-    R(abs(R) < 1e-10) = 0;
-    disp('REF:');
-    disp(R);
+    end
     for i = length(pcols):-1:1
         pc = pcols(i);
-        pr = i;        
+        pr = i;
+
         for r = 1:pr-1
             if abs(R(r, pc)) > 1e-10
                 f = R(r, pc);
                 E = eye(m);
                 E(r, pr) = -f;
                 E_list{cnt} = E;
+                E_total = E * E_total;
                 R = E * R;
-                fprintf('Step %d: eliminate R%d\n', cnt, r);
-                disp(E);
-                disp(R);
                 cnt = cnt + 1;
             end
         end
-    end    
+    end
+
     R(abs(R) < 1e-10) = 0;
-    disp('RREF:');
-    disp(R);    
+    E_total(abs(E_total) < 1e-10) = 0;
     rnk = sum(any(abs(R) > 1e-10, 2));
+    fprintf('\nRREF:\n');
+    disp(R);
+
     fprintf('Rank = %d\n', rnk);
+
+    fprintf('\nFinal transformation matrix E_total:\n');
+    disp(E_total);
 end
+
 A = [2, 1, -1, 8;
      -3, -1, 2, -11;
      -2, 1, 2, -3];
 fprintf('modify A in the code if needed');
 tic;
-[R, rnk, E_list] = my_rref(A);
+[R, rnk, E_list, E_total] = my_rref(A);
 t1 = toc;
 
 tic;
